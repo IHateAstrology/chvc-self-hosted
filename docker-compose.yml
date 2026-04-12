@@ -1,0 +1,10 @@
+services:
+  chvc:
+    build: .
+    container_name: chvc-crystal-assistant
+    restart: unless-stopped
+    ports:
+      - "3060:3060"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - PORT=3060
