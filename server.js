@@ -1,6 +1,6 @@
 const express = require("express");
 const path = require("path");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenAI } = require("@google/genai");
 const fs = require("fs");
 
 const app = express();
@@ -174,7 +174,7 @@ const coreKnowledge = coreSections.map((s) => s.body).join("\n---\n");
 
 // ── Gemini Client ──
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const conversations = new Map();
 
@@ -221,36 +221,33 @@ app.post("/api/chat", async (req, res) => {
       "\n\n## Relevant Knowledge Sections\n\n" +
       dynamicKnowledge;
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      systemInstruction,
-    });
-
-    // Convert stored messages (excluding latest user msg) to Gemini format
-    // Gemini uses "user" / "model" roles (not "assistant")
     const history = conv.messages.slice(0, -1).map((msg) => ({
       role: msg.role === "assistant" ? "model" : "user",
       parts: [{ text: msg.content }],
     }));
 
-    const chat = model.startChat({
+    const chat = ai.chats.create({
+      model: "gemini-2.5-flash",
       history,
-      generationConfig: { maxOutputTokens: 1024 },
+      config: {
+        systemInstruction,
+        maxOutputTokens: 1024,
+      },
     });
 
-    const result = await chat.sendMessage(message.trim());
-    const assistantMessage = result.response.text();
+    const result = await chat.sendMessage({ message: message.trim() });
+    const assistantMessage = result.text;
 
     conv.messages.push({ role: "assistant", content: assistantMessage });
 
-    const usage = result.response.usageMetadata;
+    const usage = result.usageMetadata;
     console.log(
       `[chat] session=${sessionId.slice(0, 8)} input=${usage?.promptTokenCount || "?"} output=${usage?.candidatesTokenCount || "?"} sections=${matched.length || "full"}`
     );
 
     res.json({ response: assistantMessage });
   } catch (err) {
-    console.error("Gemini API error:", err.message);
+    console.error("Gemini API error:", err.message, err.status || "");
     res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });

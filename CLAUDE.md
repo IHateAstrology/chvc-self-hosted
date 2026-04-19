@@ -8,7 +8,7 @@ CHVC Crystal PM Assistant — an AI chatbot that helps Chapel Hills Vision Clini
 
 - **Runtime**: Node.js 20 (Alpine Docker image)
 - **Server**: Express 4 (`server.js`)
-- **AI**: `@google/generative-ai` — Gemini 2.0 Flash, 1024 max tokens
+- **AI**: `@google/genai` — Gemini 2.5 Flash, 1024 max tokens
 - **Frontend**: Static HTML/CSS/JS served from `public/`
 - **Knowledge**: `knowledge.md` loaded at startup into the system prompt
 
