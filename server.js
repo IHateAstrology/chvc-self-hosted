@@ -231,7 +231,8 @@ app.post("/api/chat", async (req, res) => {
       history,
       config: {
         systemInstruction,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 2048,
+        thinkingConfig: { thinkingBudget: 0 },
       },
     });
 
