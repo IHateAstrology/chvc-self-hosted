@@ -235,7 +235,17 @@ app.post("/api/chat", async (req, res) => {
       },
     });
 
-    const result = await chat.sendMessage({ message: message.trim() });
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(
+        () => reject(Object.assign(new Error("Request timed out"), { isTimeout: true })),
+        30000
+      )
+    );
+
+    const result = await Promise.race([
+      chat.sendMessage({ message: message.trim() }),
+      timeoutPromise,
+    ]);
     const assistantMessage = result.text;
 
     conv.messages.push({ role: "assistant", content: assistantMessage });
@@ -247,6 +257,14 @@ app.post("/api/chat", async (req, res) => {
 
     res.json({ response: assistantMessage });
   } catch (err) {
+    if (err.isTimeout) {
+      console.error("Gemini API error: request timed out after 30s");
+      return res.status(500).json({ error: "The assistant took too long to respond. Please try again." });
+    }
+    if (err.status === 429) {
+      console.error("Gemini API error: rate limit exceeded");
+      return res.status(500).json({ error: "The assistant is busy right now. Please wait a moment and try again." });
+    }
     console.error("Gemini API error:", err.message, err.status || "");
     res.status(500).json({ error: "Something went wrong. Please try again." });
   }
